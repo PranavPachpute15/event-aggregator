@@ -7,7 +7,8 @@ event_bp = Blueprint("event_bp", __name__)
 def get_events():
     try:
         category = request.args.get("category")
-        events = fetch_events(category)
+        event_type = request.args.get("type")
+        events = fetch_events(category, event_type)
         return jsonify({"events": events})
     except Exception as e:
         return {"error": str(e)}
