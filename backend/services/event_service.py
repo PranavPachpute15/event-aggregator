@@ -28,6 +28,24 @@ def fetch_events(category=None, event_type=None):
         filtered_events = []
 
         for event in events:
+            # 🔥 FILTER: ONLY INDIA + ONLINE EVENTS
+            # 🔥 STRONG INDIA + ONLINE FILTER
+
+            location = (event.get("location") or "").lower()
+
+            india_keywords = [
+                "india", "delhi", "mumbai", "pune", "bangalore",
+                "hyderabad", "chennai", "kolkata", "kanpur",
+                "uttar pradesh", "maharashtra", "karnataka",
+                "tamil nadu"
+            ]
+
+            # ✅ ONLY ALLOW INDIA OR ONLINE
+            is_india = any(word in location for word in india_keywords)
+            is_online = "online" in location
+
+            if not (is_india or is_online):
+                continue
             start = event.get("start_date")
             end = event.get("end_date")
 

@@ -1,8 +1,12 @@
 from flask import Flask
+from flask_cors import CORS
 from db import get_db_connection
 from routes.event_routes import event_bp
 
 app = Flask(__name__)
+
+# 🔥 ENABLE CORS (VERY IMPORTANT)
+CORS(app)
 
 # Register Blueprint (routes)
 app.register_blueprint(event_bp)

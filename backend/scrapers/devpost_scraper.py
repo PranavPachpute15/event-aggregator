@@ -56,12 +56,19 @@ def fetch_event_details(event_url):
         return "", None, None
 
 
-# 🔹 MAIN SCRAPER WITH INCREASED PAGES
+# 🔹 MAIN SCRAPER WITH FILTER
 def fetch_devpost_events():
     all_events = []
 
+    india_keywords = [
+        "india", "delhi", "mumbai", "pune", "bangalore",
+        "hyderabad", "chennai", "kolkata", "kanpur",
+        "uttar pradesh", "maharashtra", "karnataka",
+        "tamil nadu"
+    ]
+
     try:
-        for page in range(1, 11):   # 🔥 INCREASED TO 10 PAGES
+        for page in range(1, 11):
             print(f"\nFetching page {page}...")
 
             params = {"page": page}
@@ -74,19 +81,32 @@ def fetch_devpost_events():
 
             print("Found:", len(hackathons))
 
-            # 🔥 STOP if no more data
             if not hackathons:
                 break
 
             for hackathon in hackathons:
                 try:
-                    # -------- TITLE --------
                     title = (hackathon.get("title") or "").strip()
-
-                    # -------- URL --------
                     event_url = hackathon.get("url")
 
                     if not title or not event_url:
+                        continue
+
+                    # -------- LOCATION --------
+                    location_data = hackathon.get("displayed_location")
+
+                    if isinstance(location_data, dict):
+                        location = location_data.get("location", "Online")
+                    else:
+                        location = location_data or "Online"
+
+                    location = location.strip().lower()
+
+                    # 🔥 FILTER BEFORE PROCESSING
+                    is_india = any(word in location for word in india_keywords)
+                    is_online = "online" in location
+
+                    if not (is_india or is_online):
                         continue
 
                     print("Scraping details for:", title)
@@ -101,16 +121,6 @@ def fetch_devpost_events():
                     if not end_date:
                         end_date = (datetime.today() + timedelta(days=7)).strftime("%Y-%m-%d")
 
-                    # -------- LOCATION --------
-                    location_data = hackathon.get("displayed_location")
-
-                    if isinstance(location_data, dict):
-                        location = location_data.get("location", "Online")
-                    else:
-                        location = location_data or "Online"
-
-                    location = location.strip()
-
                     # -------- EVENT OBJECT --------
                     event = {
                         "title": title,
@@ -120,7 +130,7 @@ def fetch_devpost_events():
                         "category": "hackathon",
                         "start_date": start_date,
                         "end_date": end_date,
-                        "location": location
+                        "location": location.title()
                     }
 
                     all_events.append(event)
@@ -141,7 +151,7 @@ def push_events_to_api():
 
     events = fetch_devpost_events()
 
-    print("\nTotal events fetched:", len(events))
+    print("\nTotal events after filtering:", len(events))
 
     for event in events:
         try:
