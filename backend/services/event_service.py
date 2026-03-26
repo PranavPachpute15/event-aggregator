@@ -2,7 +2,7 @@ from db import get_db_connection
 from datetime import datetime
 
 
-# 🔹 FETCH EVENTS (NO HARD FILTER — DEBUG + FLEXIBLE)
+# 🔹 FETCH EVENTS (FINAL FIXED VERSION)
 def fetch_events(category=None, event_type=None):
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
@@ -22,56 +22,48 @@ def fetch_events(category=None, event_type=None):
     cursor.close()
     connection.close()
 
-    # 🔥 APPLY FILTERING IN PYTHON (SMART WAY)
-    if event_type:
-        today = datetime.today().date()
-        filtered_events = []
+    # 🔥 CLEAN + FIXED LOGIC
+    today = datetime.today().date()
+    cleaned_events = []
 
-        for event in events:
-            # 🔥 FILTER: ONLY INDIA + ONLINE EVENTS
-            # 🔥 STRONG INDIA + ONLINE FILTER
-
-            location = (event.get("location") or "").lower()
-
-            india_keywords = [
-                "india", "delhi", "mumbai", "pune", "bangalore",
-                "hyderabad", "chennai", "kolkata", "kanpur",
-                "uttar pradesh", "maharashtra", "karnataka",
-                "tamil nadu"
-            ]
-
-            # ✅ ONLY ALLOW INDIA OR ONLINE
-            is_india = any(word in location for word in india_keywords)
-            is_online = "online" in location
-
-            if not (is_india or is_online):
-                continue
+    for event in events:
+        try:
             start = event.get("start_date")
             end = event.get("end_date")
 
-            if start:
+            # ❌ Skip bad data
+            if not start or not end:
+                continue
+
+            # ✅ Convert datetime → date safely
+            if hasattr(start, "date"):
                 start = start.date()
-            if end:
+            if hasattr(end, "date"):
                 end = end.date()
 
-            if event_type == "upcoming":
-                if start and start >= today:
-                    filtered_events.append(event)
+            # ❌ REMOVE PAST EVENTS (GLOBAL FIX)
+            if end < today:
+                continue
 
-            elif event_type == "ongoing":
-                if start and end and start <= today <= end:
-                    filtered_events.append(event)
+            # ✅ ADD STATUS (IMPORTANT FOR FRONTEND)
+            if start > today:
+                event["status"] = "upcoming"
+            else:
+                event["status"] = "ongoing"
 
-            elif event_type == "past":
-                if end and end < today:
-                    filtered_events.append(event)
+            cleaned_events.append(event)
 
-        return filtered_events
+        except Exception:
+            continue
 
-    return events
+    # 🔥 APPLY FILTER AFTER CLEANING
+    if event_type:
+        return [e for e in cleaned_events if e["status"] == event_type]
+
+    return cleaned_events
 
 
-# 🔹 INSERT EVENT
+# 🔹 INSERT EVENT (UNCHANGED - BUT SAFE)
 def insert_event(data):
     try:
         connection = get_db_connection()
@@ -95,7 +87,7 @@ def insert_event(data):
         )
 
         cursor.execute(query, values)
-        connection.commit()   # ✅ VERY IMPORTANT
+        connection.commit()
 
         cursor.close()
         connection.close()

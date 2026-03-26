@@ -9,9 +9,7 @@ API_URL = "https://devpost.com/api/hackathons"
 # 🔹 Fetch details from event page
 def fetch_event_details(event_url):
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0"
-        }
+        headers = {"User-Agent": "Mozilla/5.0"}
 
         response = requests.get(event_url, headers=headers, timeout=10)
         response.raise_for_status()
@@ -43,8 +41,8 @@ def fetch_event_details(event_url):
 
                     start_str = f"{start_str} {year}"
 
-                    start_date = datetime.strptime(start_str, "%b %d %Y").strftime("%Y-%m-%d")
-                    end_date = datetime.strptime(end_str, "%b %d, %Y").strftime("%Y-%m-%d")
+                    start_date = datetime.strptime(start_str, "%b %d %Y").date()
+                    end_date = datetime.strptime(end_str, "%b %d, %Y").date()
 
             except Exception as e:
                 print("Date parsing failed:", e)
@@ -56,7 +54,7 @@ def fetch_event_details(event_url):
         return "", None, None
 
 
-# 🔹 MAIN SCRAPER WITH FILTER
+# 🔹 MAIN SCRAPER
 def fetch_devpost_events():
     all_events = []
 
@@ -67,19 +65,18 @@ def fetch_devpost_events():
         "tamil nadu"
     ]
 
+    today = datetime.today().date()
+
     try:
         for page in range(1, 11):
             print(f"\nFetching page {page}...")
 
             params = {"page": page}
-
             response = requests.get(API_URL, params=params, timeout=10)
             response.raise_for_status()
 
             data = response.json()
             hackathons = data.get("hackathons", [])
-
-            print("Found:", len(hackathons))
 
             if not hackathons:
                 break
@@ -100,36 +97,39 @@ def fetch_devpost_events():
                     else:
                         location = location_data or "Online"
 
-                    location = location.strip().lower()
+                    location_lower = location.lower()
 
-                    # 🔥 FILTER BEFORE PROCESSING
-                    is_india = any(word in location for word in india_keywords)
-                    is_online = "online" in location
+                    # 🔥 FILTER (India + Online only)
+                    is_india = any(word in location_lower for word in india_keywords)
+                    is_online = "online" in location_lower
 
                     if not (is_india or is_online):
                         continue
 
-                    print("Scraping details for:", title)
+                    print("Scraping:", title)
 
-                    # 🔥 Deep scraping
+                    # 🔥 Fetch detailed data
                     description, start_date, end_date = fetch_event_details(event_url)
 
-                    # 🔥 TEMP DATE FIX
+                    # 🔥 FIX DATES (CRITICAL)
                     if not start_date:
-                        start_date = datetime.today().strftime("%Y-%m-%d")
+                        start_date = today + timedelta(days=4)
 
                     if not end_date:
-                        end_date = (datetime.today() + timedelta(days=7)).strftime("%Y-%m-%d")
+                        end_date = start_date + timedelta(days=10)
 
-                    # -------- EVENT OBJECT --------
+                    # ❌ Skip invalid past events early
+                    if end_date < today:
+                        continue
+
                     event = {
-                        "title": title,
+                        "title": f"[Devpost] {title}",
                         "description": description,
                         "event_url": event_url,
                         "source": "Devpost",
                         "category": "hackathon",
-                        "start_date": start_date,
-                        "end_date": end_date,
+                        "start_date": start_date.strftime("%Y-%m-%d"),
+                        "end_date": end_date.strftime("%Y-%m-%d"),
                         "location": location.title()
                     }
 
@@ -141,17 +141,17 @@ def fetch_devpost_events():
         return all_events
 
     except Exception as e:
-        print("API failed:", e)
+        print("Devpost API failed:", e)
         return []
 
 
 # 🔹 PUSH TO BACKEND
-def push_events_to_api():
+def push_devpost_events():
     BACKEND_API = "http://127.0.0.1:5000/add-event"
 
     events = fetch_devpost_events()
 
-    print("\nTotal events after filtering:", len(events))
+    print("\nTotal Devpost events:", len(events))
 
     for event in events:
         try:
@@ -163,4 +163,4 @@ def push_events_to_api():
 
 # 🔹 ENTRY POINT
 if __name__ == "__main__":
-    push_events_to_api()
+    push_devpost_events()
