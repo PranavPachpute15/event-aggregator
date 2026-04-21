@@ -2,7 +2,22 @@ from flask import Flask, jsonify, request
 from services.event_service import fetch_events, insert_event
 from db import get_db_connection
 
+# 🔥 ADD THIS (SCRAPERS)
+from scrapers.run_all_scrapers import run_all_scrapers
+
 app = Flask(__name__)
+
+
+# 🔹 RUN SCRAPERS ON STARTUP (AUTO)
+@app.before_first_request
+def startup():
+    try:
+        print("🚀 Running scrapers on startup...")
+        run_all_scrapers()
+        print("✅ Scrapers completed")
+    except Exception as e:
+        print("❌ Scraper error:", e)
+
 
 # 🔹 HOME
 @app.route("/")
@@ -47,6 +62,16 @@ def delete_event(event_id):
         return jsonify({"error": str(e)})
 
 
+# 🔥 MANUAL SCRAPER TRIGGER (VERY IMPORTANT)
+@app.route("/run-scrapers", methods=["GET"])
+def run_scrapers():
+    try:
+        run_all_scrapers()
+        return jsonify({"message": "Scrapers executed successfully ✅"})
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
 # 🔹 TEST DB
 @app.route("/test-db")
 def test_db():
@@ -64,7 +89,7 @@ def test_db():
         return f"Database Connection Failed ❌ {str(e)}"
 
 
-# 🔹 RUN
+# 🔹 RUN SERVER
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
