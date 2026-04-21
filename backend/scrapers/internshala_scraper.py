@@ -11,7 +11,7 @@ def scrape_internshala():
 
     today = datetime.today().date()
 
-    for page in range(1, 6):
+    for page in range(1, 5):
         print(f"Fetching Internshala page {page}...")
         url = BASE_URL.format(page)
 

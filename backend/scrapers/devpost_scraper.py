@@ -62,7 +62,7 @@ def scrape_devpost():
     today = datetime.today().date()
 
     try:
-        for page in range(1, 6):  # reduced for speed
+        for page in range(1, 3):  # reduced for speed
             print(f"Fetching Devpost page {page}...")
 
             response = requests.get(API_URL, params={"page": page}, timeout=10)

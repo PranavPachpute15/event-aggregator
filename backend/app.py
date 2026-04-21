@@ -78,6 +78,16 @@ def test_db():
     except Exception as e:
         return f"Database Connection Failed ❌ {str(e)}"
 
+@app.route("/run-scrapers", methods=["GET"])
+def run_scrapers():
+    from threading import Thread
+
+    def run():
+        run_all_scrapers()
+
+    Thread(target=run).start()
+
+    return jsonify({"message": "Scrapers started in background 🚀"})
 
 # 🔹 RUN SERVER
 if __name__ == "__main__":
