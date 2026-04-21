@@ -78,13 +78,6 @@ def test_db():
     except Exception as e:
         return f"Database Connection Failed ❌ {str(e)}"
 
-@app.route("/run-scrapers", methods=["GET"])
-def run_scrapers():
-    try:
-        run_all_scrapers()
-        return {"message": "Scrapers executed successfully ✅"}
-    except Exception as e:
-        return {"error": str(e)}
 
 # 🔹 RUN SERVER
 if __name__ == "__main__":
