@@ -5,14 +5,14 @@ from datetime import datetime, timedelta
 BASE_URL = "https://internshala.com/internships/page-{}"
 
 
-def fetch_internshala_events():
+def scrape_internshala():
     events = []
     headers = {"User-Agent": "Mozilla/5.0"}
 
     today = datetime.today().date()
 
     for page in range(1, 6):
-        print(f"\nFetching page {page}...")
+        print(f"Fetching Internshala page {page}...")
         url = BASE_URL.format(page)
 
         try:
@@ -44,8 +44,7 @@ def fetch_internshala_events():
                 location_tag = card.find("a", class_="location_link")
                 location = location_tag.text.strip() if location_tag else "India"
 
-                # 🔥 SMART DATE LOGIC
-                # mix upcoming + ongoing
+                # 🔥 DATE LOGIC
                 if i % 3 == 0:
                     start_date = today + timedelta(days=3)
                 else:
@@ -67,23 +66,7 @@ def fetch_internshala_events():
                 events.append(event)
 
             except Exception as e:
-                print("Error:", e)
+                print("Parse error:", e)
 
+    print(f"Internshala total: {len(events)}")
     return events
-def push_internshala_events():
-    BACKEND_API = "http://127.0.0.1:5000/add-event"
-
-    events = fetch_internshala_events()
-
-    print("\nTotal Internshala events:", len(events))
-
-    for event in events:
-        try:
-            res = requests.post(BACKEND_API, json=event)
-            print(res.status_code, event["title"])
-        except Exception as e:
-            print("Failed to send:", e)
-
-
-if __name__ == "__main__":
-    push_internshala_events()

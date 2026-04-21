@@ -1,35 +1,41 @@
 import requests
 from bs4 import BeautifulSoup
-import urllib3
+from datetime import datetime, timedelta
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-url = "http://quotes.toscrape.com"
+def scrape_quotes():
+    url = "http://quotes.toscrape.com"
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, "html.parser")
 
-response = requests.get(url, verify=False)
-soup = BeautifulSoup(response.text, "html.parser")
+    quotes = soup.find_all("div", class_="quote")
 
-quotes = soup.find_all("div", class_="quote")
+    today = datetime.today().date()
+    events = []
 
-api_url = "http://127.0.0.1:5000/add-event"
+    for i, q in enumerate(quotes):
+        try:
+            text = q.find("span", class_="text").text.strip()
+            author = q.find("small", class_="author").text
 
-for q in quotes:
-    text = q.find("span", class_="text").text.encode("utf-8", "ignore").decode("utf-8")
-    author = q.find("small", class_="author").text
-    tags = [tag.text for tag in q.find_all("a", class_="tag")]
+            start_date = today + timedelta(days=i % 3)
+            end_date = start_date + timedelta(days=1)
 
-    # Convert quote → event format
-    data = {
-        "title": text[:50],  # short title
-        "description": f"By {author} | Tags: {', '.join(tags)}",
-        "event_url": "http://quotes.toscrape.com",
-        "source": "QuotesScraper",
-        "category": "Inspiration",
-        "start_date": "2026-04-01 10:00:00",
-        "end_date": "2026-04-02 18:00:00",
-        "location": "Online"
-    }
+            event = {
+                "title": text[:50],
+                "description": f"By {author}",
+                "event_url": "http://quotes.toscrape.com",
+                "source": "Quotes",
+                "category": "inspiration",
+                "start_date": start_date.strftime("%Y-%m-%d"),
+                "end_date": end_date.strftime("%Y-%m-%d"),
+                "location": "Online"
+            }
 
-    response = requests.post(api_url, json=data)
+            events.append(event)
 
-    print(response.json())
+        except Exception as e:
+            print("Error:", e)
+
+    print(f"Quotes total: {len(events)}")
+    return events

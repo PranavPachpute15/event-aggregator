@@ -1,9 +1,10 @@
 import requests
+from datetime import datetime, timedelta
 
 API_URL = "https://www.eventbrite.com/api/v3/destination/search/"
 
 
-def fetch_eventbrite_events():
+def scrape_eventbrite():
     try:
         headers = {
             "User-Agent": "Mozilla/5.0"
@@ -19,12 +20,12 @@ def fetch_eventbrite_events():
         response.raise_for_status()
 
         data = response.json()
-
         events = data.get("events", [])
 
-        print("Found Eventbrite events:", len(events))
+        print("Eventbrite found:", len(events))
 
         results = []
+        today = datetime.today().date()
 
         for event in events:
             try:
@@ -37,43 +38,40 @@ def fetch_eventbrite_events():
                 if not title or not event_url:
                     continue
 
+                # 🔥 FIX DATES
+                try:
+                    start_date = datetime.fromisoformat(start).date() if start else today + timedelta(days=2)
+                except:
+                    start_date = today + timedelta(days=2)
+
+                try:
+                    end_date = datetime.fromisoformat(end).date() if end else start_date + timedelta(days=2)
+                except:
+                    end_date = start_date + timedelta(days=2)
+
+                # ❌ Skip past
+                if end_date < today:
+                    continue
+
                 event_data = {
-                    "title": title.strip(),
+                    "title": f"[Eventbrite] {title.strip()}",
                     "description": "",
                     "event_url": event_url,
                     "source": "Eventbrite",
                     "category": "event",
-                    "start_date": start,
-                    "end_date": end,
+                    "start_date": start_date.strftime("%Y-%m-%d"),
+                    "end_date": end_date.strftime("%Y-%m-%d"),
                     "location": "India"
                 }
 
                 results.append(event_data)
 
             except Exception as e:
-                print("Error parsing Eventbrite:", e)
+                print("Parse error:", e)
 
+        print(f"Eventbrite total: {len(results)}")
         return results
 
     except Exception as e:
-        print("Eventbrite API failed:", e)
+        print("Eventbrite failed:", e)
         return []
-
-
-def push_eventbrite_events():
-    BACKEND_API = "http://127.0.0.1:5000/add-event"
-
-    events = fetch_eventbrite_events()
-
-    print("Fetched Eventbrite:", len(events))
-
-    for event in events:
-        try:
-            res = requests.post(BACKEND_API, json=event)
-            print(res.status_code, event["title"])
-        except Exception as e:
-            print("Failed to send:", e)
-
-
-if __name__ == "__main__":
-    push_eventbrite_events()
