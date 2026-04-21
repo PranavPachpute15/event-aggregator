@@ -52,15 +52,6 @@ def delete_event(event_id):
         return jsonify({"error": str(e)})
 
 
-# 🔥 MANUAL SCRAPER TRIGGER (VERY IMPORTANT)
-@app.route("/run-scrapers", methods=["GET"])
-def run_scrapers():
-    try:
-        run_all_scrapers()
-        return jsonify({"message": "Scrapers executed successfully ✅"})
-    except Exception as e:
-        return jsonify({"error": str(e)})
-
 
 # 🔹 TEST DB
 @app.route("/test-db")
