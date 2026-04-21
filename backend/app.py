@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from backend.event_service import fetch_events, insert_event
+from event_service import fetch_events, insert_event
 from db import get_db_connection
 
 app = Flask(__name__)
