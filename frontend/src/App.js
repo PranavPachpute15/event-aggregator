@@ -9,7 +9,7 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:5000/events?ts=" + Date.now())
+    fetch("https://event-aggregator-backend.onrender.com/events")
       .then((res) => res.json())
       .then((data) => {
         setEvents(data.events || []);

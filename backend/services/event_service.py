@@ -1,11 +1,11 @@
 from db import get_db_connection
-from datetime import datetime
+from datetime import datetime, timezone
 
 
-# 🔹 FETCH EVENTS (FINAL FIXED VERSION)
+# 🔹 FETCH EVENTS (FINAL STABLE VERSION)
 def fetch_events(category=None, event_type=None):
     connection = get_db_connection()
-    cursor = connection.cursor(dictionary=True)
+    cursor = connection.cursor()
 
     query = "SELECT * FROM events WHERE 1=1"
     params = []
@@ -17,13 +17,18 @@ def fetch_events(category=None, event_type=None):
     query += " ORDER BY created_at DESC"
 
     cursor.execute(query, params)
-    events = cursor.fetchall()
+    rows = cursor.fetchall()
+
+    # Convert to dict
+    columns = [desc[0] for desc in cursor.description]
+    events = [dict(zip(columns, row)) for row in rows]
 
     cursor.close()
     connection.close()
 
-    # 🔥 CLEAN + FIXED LOGIC
-    today = datetime.today().date()
+    # ✅ USE UTC (IMPORTANT FIX)
+    today = datetime.now(timezone.utc).date()
+
     cleaned_events = []
 
     for event in events:
@@ -41,11 +46,11 @@ def fetch_events(category=None, event_type=None):
             if hasattr(end, "date"):
                 end = end.date()
 
-            # ❌ REMOVE PAST EVENTS (GLOBAL FIX)
+            # ❌ REMOVE PAST EVENTS (REAL FIX)
             if end < today:
                 continue
 
-            # ✅ ADD STATUS (IMPORTANT FOR FRONTEND)
+            # ✅ ADD STATUS (for frontend filter)
             if start > today:
                 event["status"] = "upcoming"
             else:
@@ -53,17 +58,18 @@ def fetch_events(category=None, event_type=None):
 
             cleaned_events.append(event)
 
-        except Exception:
+        except Exception as e:
+            print("Error processing event:", e)
             continue
 
-    # 🔥 APPLY FILTER AFTER CLEANING
+    # ✅ APPLY FILTER AFTER CLEANING
     if event_type:
-        return [e for e in cleaned_events if e["status"] == event_type]
+        return [e for e in cleaned_events if e.get("status") == event_type]
 
     return cleaned_events
 
 
-# 🔹 INSERT EVENT (UNCHANGED - BUT SAFE)
+# 🔹 INSERT EVENT (SAFE)
 def insert_event(data):
     try:
         connection = get_db_connection()
