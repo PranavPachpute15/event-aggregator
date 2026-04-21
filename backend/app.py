@@ -1,22 +1,12 @@
 from flask import Flask, jsonify, request
 from services.event_service import fetch_events, insert_event
 from db import get_db_connection
+from scrapers.run_all_scrapers import run_all_scrapers
 
 # 🔥 ADD THIS (SCRAPERS)
 from scrapers.run_all_scrapers import run_all_scrapers
 
 app = Flask(__name__)
-
-
-# 🔹 RUN SCRAPERS ON STARTUP (AUTO)
-@app.before_first_request
-def startup():
-    try:
-        print("🚀 Running scrapers on startup...")
-        run_all_scrapers()
-        print("✅ Scrapers completed")
-    except Exception as e:
-        print("❌ Scraper error:", e)
 
 
 # 🔹 HOME
@@ -88,6 +78,13 @@ def test_db():
     except Exception as e:
         return f"Database Connection Failed ❌ {str(e)}"
 
+@app.route("/run-scrapers", methods=["GET"])
+def run_scrapers():
+    try:
+        run_all_scrapers()
+        return {"message": "Scrapers executed successfully ✅"}
+    except Exception as e:
+        return {"error": str(e)}
 
 # 🔹 RUN SERVER
 if __name__ == "__main__":
